@@ -1,0 +1,16 @@
+{
+  "presets": ["babel-preset-expo", "react-native-dotenv"],
+  "retainLines": true,
+  "env": {
+    "development": {
+      "plugins": [
+        "transform-react-jsx-source",
+        "inline-dotenv"
+      ]
+    }
+  },
+  "plugins": [
+    ["import", { "libraryName": "antd-mobile" }],
+    "inline-dotenv"
+  ]
+}
