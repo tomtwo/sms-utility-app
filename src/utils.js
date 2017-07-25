@@ -18,19 +18,46 @@ export function debounce(func, wait, immediate) {
   };
 };
 
-export async function sendSMSMessage(sender, receiver, content) {
+async function makeAPIRequest({ method, url, data }) {
   const res = await axios({
-    url: urljoin(API_URL, 'send'),
-    method: 'post',
+    url: urljoin(API_URL, url),
+    method: method,
     headers: {
       'x-api-key': API_KEY,
     },
+    data: data
+  });
+
+  return res.data;
+}
+
+export async function sendSMSMessage(sender, receiver, content) {
+  const res = await makeAPIRequest({
+    method: 'post',
+    url: '/send',
     data: {
       sender, receiver, content
     }
   });
 
-  console.log('got res>>', res.data);
+  if (!res.success) {
+    throw new Error(res.message);
+  }
 
   return res.data;
+}
+
+export async function getSMSBalance(sender, receiver, content) {
+  const res = await makeAPIRequest({
+    method: 'get',
+    url: '/balance'
+  });
+
+  console.log('got sms>', res);
+
+  if (!res.success) {
+    throw new Error(res.message);
+  }
+
+  return res.data && res.data.value;
 }

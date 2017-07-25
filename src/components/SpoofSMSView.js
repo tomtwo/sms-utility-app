@@ -5,7 +5,7 @@ import { StyleSheet, Text, View, ScrollView, TextInput } from 'react-native';
 import { Button, List, InputItem, Modal } from 'antd-mobile';
 
 import type { Contact } from '../types';
-import { sendSMSMessage } from '../utils';
+import { sendSMSMessage, getSMSBalance } from '../utils';
 
 export default class SpoofSMSView extends React.Component {
   static navigationOptions = {
@@ -36,6 +36,10 @@ export default class SpoofSMSView extends React.Component {
     balance: null,
   }
 
+  componentDidMount() {
+    this._getBalance();
+  }
+
   _selectContact : () => Promise<Contact> = (contactLabel) => {
     return new Promise(resolve => {
       this.props.navigation.navigate('SelectContact', {
@@ -63,6 +67,12 @@ export default class SpoofSMSView extends React.Component {
     });
   }
 
+  _getBalance = async () => {
+    const balance = await getSMSBalance();
+
+    this.setState({ balance: `${balance}` }); // converting to string
+  }
+
   _send = async () => {
     const { sender, receiver, content } = this.state;
 
@@ -83,15 +93,18 @@ export default class SpoofSMSView extends React.Component {
     }
 
     this.setState({ sending: true, sent: false, error: null, cost: null });
-    const res = await sendSMSMessage(sender, receiver, content);
 
-    if (!res.success) {
-      this.setState({ sending: false, sent: false, error: res.message });
+    let data = null;
+
+    try {
+      data = await sendSMSMessage(sender, receiver, content);
+    } catch (ex) {
+      this.setState({ sending: false, sent: false, error: ex });
       return;
     }
 
     try {
-      this.setState({ sending: false, sent: true, cost: res.data.messages[0]['message-price'], balance: res.data.messages[0]['remaining-balance'] });
+      this.setState({ sending: false, sent: true, cost: data.messages[0]['message-price'], balance: data.messages[0]['remaining-balance'] });
     } catch (ex) {
       this.setState({ sending: false, sent: true });
     }
@@ -163,6 +176,7 @@ export default class SpoofSMSView extends React.Component {
 
         {this.state.sent && <Text style={styles.statusText}>Message sent successfully!</Text>}
         {this.state.cost && <Text style={styles.statusText}>Cost: ${parseFloat(this.state.cost).toFixed(4)}</Text>}
+        {this.state.balance && <Text style={styles.statusText}>Remaining balance: ${parseFloat(this.state.balance).toFixed(4)}</Text>}
       </ScrollView>
     );
   }
